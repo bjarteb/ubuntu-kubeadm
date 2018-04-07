@@ -16,6 +16,13 @@ kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address 10.0
 kubeadm token list | awk 'NR==2 { print $1; }' > /vagrant/token
 openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //' > /vagrant/ca-cert-hash
 
-export KUBECONFIG=/etc/kubernetes/admin.conf
-kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml
-kubectl get pods --all-namespaces
+# We are going to replace the flannel network pods.
+cat > flannel.sh <<EOF
+#!/bin/sh
+export KUBECONFIG=\$(pwd)/admin.conf
+# deploy flannel
+curl -sL https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml |awk '1;/kube-subnet-mgr/{ print "        - --iface=enp0s8";}' | kubectl apply -f -
+EOF
+chmod +x flannel.sh
+# make it available from host OS
+cp -f flannel.sh /vagrant
