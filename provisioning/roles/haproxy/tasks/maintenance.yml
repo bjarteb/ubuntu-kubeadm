@@ -1,0 +1,19 @@
+---
+
+- name: create nginx content directory
+  file: path=/vagrant/data/nginx/html state=directory mode=0755
+
+- name: onboard the maintenance index page
+  template: src="index.html.j2" dest=/vagrant/data/nginx/html/index.html mode=0644
+
+- name: start nginx container
+  docker_container:
+    name: nginx
+    image: nginx:1.17.9-alpine
+    state: started
+    restart_policy: unless-stopped
+    network_mode: bridge
+    ports:
+      - "8000:80"
+    volumes:
+      - "/vagrant/data/nginx/html:/usr/share/nginx/html"

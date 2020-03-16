@@ -1,0 +1,51 @@
+---
+
+- hosts: all
+  tasks:
+    - name: install python
+      raw: test -e /usr/bin/python3 || (apt update && apt install -y python3-minimal)
+      register: test
+      changed_when: test.stdout | bool
+
+    - name: install packages
+      vars:
+        packages:
+          - docker.io
+          - jq
+          - htop
+          - traceroute
+          - iftop
+          - python3-pip
+      apt:
+        name: "{{ packages }}"
+        state: "present"
+        update_cache: true
+
+    - name: install pip modules
+      vars:
+        pip_modules:
+          - pip
+          - docker
+      pip:
+        name: "{{ pip_modules }}"
+        state: latest
+
+    - name: remove default host lookup
+      lineinfile:
+        path: "/etc/hosts"
+        regexp: "127.0.1.1.*"
+        state: "absent"
+
+    - name: configure /etc/hosts
+      lineinfile:
+        path: "/etc/hosts"
+        line: "{{ item.line }}"
+      loop:
+        - { line: "10.0.19.10 lb" }
+        - { line: "10.0.19.11 m1" }
+        - { line: "10.0.19.12 m2" }
+        - { line: "10.0.19.13 m3" }
+
+    - name: install haproxy
+      import_role:
+        name: "haproxy"
