@@ -36,33 +36,56 @@ MSG
   config.hostmanager.enabled = true
   config.hostmanager.manage_guest = true
 
-  # create k8s master node
-  config.vm.define :m do |node|
-    node.vm.box = "ubuntu/xenial64"
-    node.vm.hostname = "m"
+  # create load balancer node
+  config.vm.define :lb do |node|
+    node.vm.box = "ubuntu/bionic64"
+    node.vm.hostname = "lb"
     node.vm.network :private_network, ip: "10.0.19.10"
     node.vm.network "forwarded_port", guest: 80, host: 21987
     node.vm.provider "virtualbox" do |vb|
-      vb.customize ["modifyvm", :id, "--memory", 1024]
+      vb.customize ["modifyvm", :id, "--memory", 512]
       vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     end
-    node.vm.provision :shell, path: "provisioning/bootstrap-master.sh"
-    node.vm.provision :shell, path: "provisioning/configure-vagrant-user.sh", privileged: false
+    node.vm.provision "ansible" do |ansible|
+      ansible.extra_vars = { ansible_python_interpreter:"/usr/bin/python3" }
+      ansible.become = true
+      ansible.playbook = "provisioning/install_loadbalancer.yml"
+    end
   end
 
-  # create k8s worker nodes
+  # create k8s control plane(s)
   (1..1).each do |i|
-    config.vm.define "w#{i}" do |node|
-      node.vm.box = "ubuntu/xenial64"
-      node.vm.hostname = "w#{i}"
-      node.vm.network :private_network, ip: "10.0.19.2#{i}"
-      node.vm.network "forwarded_port", guest: 80, host: "918#{i}"
+    config.vm.define "m#{i}" do |node|
+      node.vm.box = "ubuntu/bionic64"
+      node.vm.hostname = "m#{i}"
+      node.vm.network :private_network, ip: "10.0.19.1#{i}"
       node.vm.provider "virtualbox" do |vb|
         vb.customize ["modifyvm", :id, "--memory", 1024]
         vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       end
-      node.vm.provision :shell, path: "provisioning/bootstrap-worker.sh"
+      node.vm.provision "ansible" do |ansible|
+        ansible.extra_vars = { ansible_python_interpreter:"/usr/bin/python3" }
+        ansible.become = true
+        ansible.playbook = "provisioning/install_controlplane.yml"
+      end
+      #node.vm.provision :shell, path: "provisioning/bootstrap-master.sh"
+      #node.vm.provision :shell, path: "provisioning/configure-vagrant-user.sh", privileged: false
     end
   end
-  config.vm.post_up_message = post_up_msg
+#
+#  # create k8s worker nodes
+#  (1..2).each do |i|
+#    config.vm.define "w#{i}" do |node|
+#      node.vm.box = "ubuntu/xenial64"
+#      node.vm.hostname = "w#{i}"
+#      node.vm.network :private_network, ip: "10.0.19.2#{i}"
+#      node.vm.network "forwarded_port", guest: 80, host: "918#{i}"
+#      node.vm.provider "virtualbox" do |vb|
+#        vb.customize ["modifyvm", :id, "--memory", 1024]
+#        vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+#      end
+#      node.vm.provision :shell, path: "provisioning/bootstrap-worker.sh"
+#    end
+#  end
+#  config.vm.post_up_message = post_up_msg
 end
