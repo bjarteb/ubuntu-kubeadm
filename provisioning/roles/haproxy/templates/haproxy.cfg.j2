@@ -1,50 +1,12 @@
-global
-  user root
-  group root
-  daemon
-  log /dev/log    local0
-  log /dev/log    local1 notice
-  stats socket /var/run/haproxy.sock mode 600 level admin
-  stats timeout 30s
-  tune.ssl.default-dh-param 2048
-
-defaults
-  log     global
-  mode    http
-  option  httplog
-  option  dontlognull
-  retries 3
-  timeout connect 5000
-  timeout client  50000
-  timeout server  50000
-
-frontend http
-
-    bind *:80 transparent
-    redirect scheme https
-
-frontend https
-
-    bind *:443
-
-    timeout client 50000ms
-
-    http-request set-header X-Forwarded-Port %[dst_port]
-    http-request set-header X-Forwarded-Proto https if { ssl_fc }
-    http-request set-header X-Forwarded-Host %[req.hdr(Host)]
-
-
-frontend kubeapi
-
+frontend localnodes
     bind *:6443
+    mode tcp
+    default_backend nodes
+    timeout client          1m
 
-backend kubeapi
-
-    mode http
-    timeout server 50000ms
-    timeout connect 50000ms
-    option httpclose
-    option forwardfor
-    cookie SERVERID insert indirect nocache
-    server m1 m1:6443 weight 1 maxconn 25 check cookie s1 ssl verify none
-    server maintenance 127.0.0.1:8000 backup
+backend nodes
+    mode tcp
+    balance roundrobin
+    server m1 m1:6443;
+    timeout connect        10s
+    timeout server          1m

@@ -54,7 +54,7 @@ MSG
   end
 
   # create k8s control plane(s)
-  (1..1).each do |i|
+  (1..3).each do |i|
     config.vm.define "m#{i}" do |node|
       node.vm.box = "ubuntu/bionic64"
       node.vm.hostname = "m#{i}"

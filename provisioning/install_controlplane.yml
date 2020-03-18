@@ -20,6 +20,17 @@
 
     - name: get upstream APT GPG key
       apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        state: "present"
+
+    - name: configure upstream APT repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+        state: "present"
+        update_cache: true
+
+    - name: get upstream APT GPG key
+      apt_key:
         url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
         state: "present"
 
@@ -37,7 +48,9 @@
           - traceroute
           - iftop
           - python3-pip
-          - docker.io
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
           - kubeadm
           - kubelet
           - kubectl
@@ -72,3 +85,35 @@
       loop:
         - net.bridge.bridge-nf-call-ip6tables
         - net.bridge.bridge-nf-call-iptables
+
+    - name: Remove swapfile from /etc/fstab
+      mount:
+        name: swap
+        fstype: swap
+        state: absent
+
+    - name: Disable swap
+      shell: swapoff -a
+      when: ansible_swaptotal_mb > 0
+
+    - name: Copy docker config file
+      copy:
+        src: etc-docker-daemon.json
+        dest: /etc/docker/daemon.json
+
+    - name: Creates directory
+      file:
+        path: /etc/systemd/system/docker.service.d
+        state: directory
+
+    - name: Restart docker
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: docker
+
+    - name: Copy kubeadm config file
+      copy:
+        src: kubeadm-config.yaml
+        dest: /root/kubeadm-config.yaml
+
