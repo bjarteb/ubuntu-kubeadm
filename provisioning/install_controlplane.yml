@@ -74,6 +74,20 @@
         - { line: "10.0.19.11 m1" }
         - { line: "10.0.19.12 m2" }
         - { line: "10.0.19.13 m3" }
+        - { line: "10.0.19.21 w1" }
+        - { line: "10.0.19.22 w2" }
+        - { line: "10.0.19.23 w3" }
+
+    - name: ssh-key configuration
+      copy:
+        src: files/id_rsa.pub
+        dest: /home/vagrant
+        owner: vagrant
+        group: vagrant
+
+    - name: authorized keys
+      shell: "cat /home/vagrant/id_rsa.pub >> /home/vagrant/.ssh/authorized_keys"
+      changed_when: false
 
     - name: configure kernel params
       sysctl:
@@ -111,9 +125,3 @@
         state: restarted
         daemon_reload: yes
         name: docker
-
-    - name: Copy kubeadm config file
-      copy:
-        src: kubeadm-config.yaml
-        dest: /root/kubeadm-config.yaml
-

@@ -1,0 +1,89 @@
+---
+
+- hosts: m1
+  become: yes
+  tasks:
+    - name: Put initial kubeadm config
+      template: src=kubeadm-config.yaml.j2 dest=/root/kubeadm-config.yaml mode=0644
+
+    - name: init kubeadm
+      shell: kubeadm init --config=/root/kubeadm-config.yaml --upload-certs
+      register: kubeadm_init_output
+      ignore_errors: yes
+
+    - debug: var=kubeadm_init_output.stdout_lines
+
+    - name: write config to disk
+      copy: 
+        content: "{{ kubeadm_init_output.stdout_lines }}"
+        dest: "/vagrant/kubeadm.log"
+
+    - name: ca-cert-hash
+      shell: "openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'"
+      register: ca_cert_hash
+    - debug: var=ca_cert_hash.stdout_lines
+
+    - name: write ca_cert_hash to disk
+      copy: 
+        content: "{{ ca_cert_hash.stdout }}"
+        dest: "/vagrant/ca_cert_hash"
+    - debug: msg="ca_cert_hash {{ lookup('file', '/vagrant/ca_cert_hash') }}"
+
+    - name: Setting up kubectl
+      file:
+        path: /root/.kube/
+        state: directory
+
+    - name: Copying and set chmod
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /root/.kube/config
+        remote_src: yes
+        mode: '0600'
+
+    - name: Get kubectl version
+      shell: kubectl version | base64 | tr -d '\n'
+      register: kubectl_version
+
+    - debug: var=kubectl_version.stdout_lines
+
+- hosts: m2,m3
+  serial: 1
+  become: true
+  vars:
+    certificate_key: "e6a2eb8581237ab72a4f494f30285ec12a9694d750b9785706a83bfcbbbd2204"
+    kubeadm_token: "ayngk7.m1555duk5x2i3ctt"
+    ca_cert_hash: "{{ lookup('file', '/vagrant/ca_cert_hash') }}"
+  tasks:
+    - debug: msg="{{ ansible_enp0s8.ipv4.address }}"
+    - name: master join cluster
+      shell: "kubeadm join lb:6443 --token {{ kubeadm_token }} --discovery-token-ca-cert-hash sha256:{{ ca_cert_hash }} --control-plane --certificate-key {{ certificate_key }} --apiserver-advertise-address {{ ansible_enp0s8.ipv4.address }}"
+      register: kubeadm_join_output
+      ignore_errors: yes
+    - debug: var=kubeadm_join_output.stdout_lines
+
+    - name: Setting up kubectl
+      file:
+        path: /root/.kube/
+        state: directory
+
+    - name: Copying and set chmod
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /root/.kube/config
+        remote_src: yes
+        mode: '0600'
+
+- hosts: w1
+  become: true
+  vars:
+    kubeadm_token: "ayngk7.m1555duk5x2i3ctt"
+    ca_cert_hash: "{{ lookup('file', '/vagrant/ca_cert_hash') }}"
+  tasks:
+    - debug: msg="{{ ansible_enp0s8.ipv4.address }}"
+    - name: master join cluster
+      shell: "kubeadm join lb:6443 --token {{ kubeadm_token }} --discovery-token-ca-cert-hash sha256:{{ ca_cert_hash }}"
+      register: kubeadm_join_output
+      ignore_errors: yes
+    - debug: var=kubeadm_join_output.stdout_lines
+

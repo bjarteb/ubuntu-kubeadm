@@ -1,0 +1,57 @@
+---
+
+- hosts: all
+  tasks:
+    - name: install python
+      raw: test -e /usr/bin/python3 || (apt update && apt install -y python3-minimal)
+      register: test
+      changed_when: test.stdout | bool
+
+    - name: Install packages
+      apt:
+        name: "{{ item }}"
+        state: latest
+        update_cache: yes
+      with_items:
+        - python3-pip
+
+    - name: install pip modules
+      pip:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - ansible
+        - docker
+
+    - name: configure /etc/hosts
+      lineinfile:
+        path: "/etc/hosts"
+        line: "{{ item.line }}"
+      loop:
+        - { line: "10.0.19.10 lb" }
+        - { line: "10.0.19.11 m1" }
+        - { line: "10.0.19.12 m2" }
+        - { line: "10.0.19.13 m3" }
+        - { line: "10.0.19.21 w1" }
+        - { line: "10.0.19.22 w2" }
+        - { line: "10.0.19.23 w3" }
+
+    - name: ssh-key configuration
+      copy:
+        src: files/id_rsa
+        dest: /home/vagrant/.ssh
+        owner: vagrant
+        group: vagrant
+        mode: 0400
+
+    - name: add known hosts (ssh-keyscan)
+      become: true
+      become_user: vagrant
+      shell: "ssh-keyscan {{ item }} >> /home/vagrant/.ssh/known_hosts"
+      with_items:
+        - m1
+        - 10.0.19.11
+        - m2
+        - 10.0.19.12
+        - w1
+        - 10.0.19.21
