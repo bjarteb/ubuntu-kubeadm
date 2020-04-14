@@ -1,0 +1,7 @@
+---
+
+master_ip: "10.0.19.10"
+master_port: "8443"
+advertise_interface: "{{ ansible_enp0s8.device }}"
+advertise_address: "{{ ansible_enp0s8.ipv4.address }}"
+masters: "{{ groups['masters'] }}"

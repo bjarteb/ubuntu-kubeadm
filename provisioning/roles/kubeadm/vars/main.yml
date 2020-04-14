@@ -1,0 +1,14 @@
+---
+
+kubeadm_is_init_master: "{{ is_init_master }}"
+kubeadm_is_master: "{{ is_master }}"
+kubeadm_is_worker: "{{ is_worker }}"
+kubeadm_action: "{{ 'init_master' if kubeadm_is_init_master else 'master' if kubeadm_is_master else 'worker' }}"
+
+kubeadm_version: "stable"
+kubeadm_controlplane_endpoint: "{{ master_ip }}:{{ master_port}}"
+kubeadm_token: "ayngk7.m1555duk5x2i3ctt"
+kubeadm_certificate_key: "e6a2eb8581237ab72a4f494f30285ec12a9694d750b9785706a83bfcbbbd2204"
+kubeadm_bind_port: "6443"
+kubeadm_advertise_address: "{{ advertise_address }}"
+kubeadm_pod_subnet: "10.244.0.0/16"

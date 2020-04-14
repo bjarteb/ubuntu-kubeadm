@@ -1,0 +1,9 @@
+---
+
+kubeadm_version: "stable"
+kubeadm_controlplane_endpoint: "127.0.0.1:6443"
+kubeadm_token: "kubeadm_token"
+kubeadm_certificate_key: "kubeadm_certificate_key"
+kubeadm_bind_port: "6443"
+kubeadm_advertise_address: "127.0.0.1"
+kubeadm_pod_subnet: "10.244.0.0/16"

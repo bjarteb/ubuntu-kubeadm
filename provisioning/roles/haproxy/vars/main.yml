@@ -1,0 +1,12 @@
+---
+
+# the virtual ip and port haproxy will bind to
+# NOTE! Important kernel parameter
+# For failover, haproxy,nginx and keepalived need the ability to bind to a non-local ip address.
+# we want to allow a running LB instance to bind to an ip that is not local for failover.
+# echo 1 > /proc/sys/net/ipv4/ip_nonlocal_bind
+haproxy_master_ip: "{{ master_ip }}"
+haproxy_master_port: "{{ master_port }}"
+
+haproxy_kubeapi_port: "6443"
+haproxy_masters_ips: ['10.0.19.11','10.0.19.12','10.0.19.13']

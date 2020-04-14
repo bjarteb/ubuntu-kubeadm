@@ -1,0 +1,39 @@
+---
+
+- name: initial kubeadm config
+  template: src=kubeadm-config.yaml.j2 dest=/root/kubeadm-config.yaml mode=0644
+
+- name: kubeadm reset
+  shell: "kubeadm reset -f"
+  ignore_errors: yes
+
+- name: init kubeadm
+  shell: kubeadm init --config=/root/kubeadm-config.yaml --upload-certs
+  register: kubeadm_init_output
+  ignore_errors: yes
+
+- debug: var=kubeadm_init_output.stdout_lines
+
+- name: fetch ca-cert-hash
+  shell: "openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'"
+  register: ca_cert_hash
+
+- debug: var=ca_cert_hash.stdout_lines
+
+- name: write ca_cert_hash to disk
+  copy: 
+    content: "{{ ca_cert_hash.stdout }}"
+    dest: "/vagrant/ca_cert_hash"
+
+- debug: msg="ca_cert_hash {{ lookup('file', '/vagrant/ca_cert_hash') }}"
+
+- name: configure kubectl
+  file:
+    path: /root/.kube/
+    state: directory
+- name: Copying and set chmod
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes
+    mode: '0600'

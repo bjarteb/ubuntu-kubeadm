@@ -15,6 +15,7 @@ Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/bionic64"
 
 MASTER_IP="10.0.19.10"
+MASTER_PORT="8443"
 NUM_NODES="1".to_i()
 
 post_up_msg = <<-MSG
@@ -36,50 +37,30 @@ MSG
   config.hostmanager.enabled = true
   config.hostmanager.manage_guest = true
 
-  # create load balancer node
-  config.vm.define :lb do |node|
-    node.vm.hostname = "lb"
-    node.vm.network :private_network, ip: "10.0.19.10"
-    node.vm.network "forwarded_port", guest: 80, host: 21987
-    node.vm.provider "virtualbox" do |vb|
-      vb.customize ["modifyvm", :id, "--memory", 512]
-      vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-    end
-    node.vm.provision "ansible" do |ansible|
-      ansible.extra_vars = { ansible_python_interpreter:"/usr/bin/python3" }
-      ansible.become = true
-      ansible.playbook = "provisioning/install_loadbalancer.yml"
-    end
-  end
-
   # create k8s control plane(s)
   (1..3).each do |i|
     config.vm.define "m#{i}" do |node|
       node.vm.hostname = "m#{i}"
       node.vm.network :private_network, ip: "10.0.19.1#{i}"
+      node.vm.network "forwarded_port", guest: 6443, host: "6443#{i}"
       node.vm.provider "virtualbox" do |vb|
-        vb.customize ["modifyvm", :id, "--memory", 1024]
-        vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+        vb.customize ["modifyvm", :id, "--memory", 2048]
       end
       node.vm.provision "ansible" do |ansible|
         ansible.extra_vars = { ansible_python_interpreter:"/usr/bin/python3" }
         ansible.become = true
         ansible.playbook = "provisioning/install_controlplane.yml"
       end
-      #node.vm.provision :shell, path: "provisioning/bootstrap-master.sh"
-      #node.vm.provision :shell, path: "provisioning/configure-vagrant-user.sh", privileged: false
     end
   end
 
-  # create k8s worker nodes
-  (1..1).each do |i|
+ # create k8s worker nodes
+  (1..3).each do |i|
     config.vm.define "w#{i}" do |node|
       node.vm.hostname = "w#{i}"
       node.vm.network :private_network, ip: "10.0.19.2#{i}"
-      node.vm.network "forwarded_port", guest: 80, host: "918#{i}"
       node.vm.provider "virtualbox" do |vb|
-        vb.customize ["modifyvm", :id, "--memory", 1024]
-        vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+        vb.customize ["modifyvm", :id, "--memory", 2048]
       end
       node.vm.provision "ansible" do |ansible|
         ansible.extra_vars = { ansible_python_interpreter:"/usr/bin/python3" }
@@ -90,15 +71,13 @@ MSG
   end
   #config.vm.post_up_message = post_up_msg
 
-  config.vm.define :a do |node|
-    node.vm.hostname = "a"
-    node.vm.network "private_network", ip: "10.0.19.9"
-    node.vm.provider "virtualbox" do |vb|
+  config.vm.define "a" do |cntr|
+    cntr.vm.hostname = "a"
+    cntr.vm.network "private_network", ip: "10.0.19.9"
+    cntr.vm.provider "virtualbox" do |vb|
       vb.customize ["modifyvm", :id, "--memory", 512]
-      vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-      vb.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
     end
-    node.vm.provision "ansible" do |ansible|
+    cntr.vm.provision "ansible" do |ansible|
       ansible.playbook = 'provisioning/controller.yml'
       ansible.extra_vars = { ansible_python_interpreter:"/usr/bin/python3" }
       ansible.become = true

@@ -1,4 +1,6 @@
 ---
-# defaults file for haproxy
 
-kibana_cert: ""
+haproxy_master_ip: "127.0.0.1"
+haproxy_master_port: "8443"
+haproxy_kubeapi_port: "6443"
+haproxy_masters_ips: []

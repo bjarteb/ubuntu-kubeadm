@@ -1,0 +1,29 @@
+---
+
+- name: set CA cert fact from file
+  set_fact:
+    ca_cert_hash: "{{ lookup('file', '/vagrant/ca_cert_hash') }}"
+
+- debug: msg="{{ ca_cert_hash }}"
+
+- name: kubeadm reset
+  shell: "kubeadm reset -f"
+  ignore_errors: yes
+
+- name: master join cluster
+  shell: "kubeadm join {{ kubeadm_controlplane_endpoint }} --token {{ kubeadm_token }} --discovery-token-ca-cert-hash sha256:{{ ca_cert_hash }} --control-plane --certificate-key {{ kubeadm_certificate_key }} --apiserver-advertise-address {{ kubeadm_advertise_address }}"
+  register: kubeadm_join_output
+  ignore_errors: yes
+
+- debug: var=kubeadm_join_output.stdout_lines
+
+- name: configure kubectl
+  file:
+    path: /root/.kube/
+    state: directory
+- name: Copying and set chmod
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes
+    mode: '0600'

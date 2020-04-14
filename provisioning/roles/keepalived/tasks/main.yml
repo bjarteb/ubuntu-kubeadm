@@ -1,0 +1,33 @@
+---
+
+- name: install keepalived
+  vars:
+    packages:
+      - keepalived
+  apt:
+    name: "{{ packages }}"
+    state: "present"
+
+- name: stop service keepalived before configuration
+  systemd:
+    state: stopped
+    name: keepalived
+
+- name: ensure keepalived config file
+  template: src="keepalived.conf.j2" dest=/etc/keepalived/keepalived.conf mode=0644
+  notify:
+    - restart keepalived
+
+- name: ensure check_apiserver file
+  template: src="check_apiserver.sh.j2" dest=/etc/keepalived/check_apiserver.sh mode=0755
+  notify:
+    - restart keepalived
+
+- name: restart service keepalived after configuration
+  systemd:
+    state: restarted
+    name: keepalived
+
+- name: sleep for 10 seconds and continue with play
+  wait_for:
+    timeout: 10

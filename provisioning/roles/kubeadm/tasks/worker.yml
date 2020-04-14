@@ -1,0 +1,18 @@
+---
+
+- name: set CA cert fact from file
+  set_fact:
+    ca_cert_hash: "{{ lookup('file', '/vagrant/ca_cert_hash') }}"
+
+- debug: msg="{{ ca_cert_hash }}"
+
+- name: kubeadm reset
+  shell: "kubeadm reset -f"
+  ignore_errors: yes
+
+- name: worker join cluster
+  shell: "kubeadm join {{ kubeadm_controlplane_endpoint }} --token {{ kubeadm_token }} --discovery-token-ca-cert-hash sha256:{{ ca_cert_hash }}"
+  register: kubeadm_join_output
+  ignore_errors: yes
+
+- debug: var=kubeadm_join_output.stdout_lines

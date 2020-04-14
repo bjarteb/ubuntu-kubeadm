@@ -1,0 +1,11 @@
+---
+
+ka_is_init_master: "True"
+ka_vrrp_if: "eth0"
+ka_vrrp_ip: "127.0.0.1"
+ka_vrrp_state: "MASTER"
+ka_vrrp_priority: "100"
+
+ka_master_ip: "127.0.0.1"
+ka_master_port: "8443"
+ka_password: "password"

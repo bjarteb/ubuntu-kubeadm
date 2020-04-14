@@ -1,0 +1,28 @@
+---
+
+- hosts: masters
+  become: yes
+  serial: 1
+  vars:
+    is_init_master_node: "{{ ansible_hostname == 'm1' }}"
+    is_master_node: "{{ 'm' in ansible_hostname }}"
+    is_worker_node: "{{ 'w' in ansible_hostname }}"
+  roles:
+    - { role: keepalived, is_init_master: "{{ is_init_master_node }}",  tags: ["keepalived"] }
+    - { role: haproxy, tags: ["haproxy"] }
+    - { role: kubeadm, is_init_master: "{{ is_init_master_node }}",
+                       is_master: "{{ is_master_node }}",
+                       is_worker: "{{ is_worker_node }}",
+        tags: ["kubeadm"] }
+
+- hosts: workers
+  become: yes
+  vars:
+    is_init_master_node: "{{ ansible_hostname == 'm1' }}"
+    is_master_node: "{{ 'm' in ansible_hostname }}"
+    is_worker_node: "{{ 'w' in ansible_hostname }}"
+  roles:
+    - { role: kubeadm, is_init_master: "{{ is_init_master_node }}",
+                       is_master: "{{ is_master_node }}",
+                       is_worker: "{{ is_worker_node }}",
+        tags: ["kubeadm"] }

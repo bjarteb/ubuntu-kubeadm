@@ -17,24 +17,8 @@
 
     - name: install pip modules
       pip:
-        name: "{{ item }}"
+        name: ['ansible', 'docker']
         state: latest
-      with_items:
-        - ansible
-        - docker
-
-    - name: configure /etc/hosts
-      lineinfile:
-        path: "/etc/hosts"
-        line: "{{ item.line }}"
-      loop:
-        - { line: "10.0.19.10 lb" }
-        - { line: "10.0.19.11 m1" }
-        - { line: "10.0.19.12 m2" }
-        - { line: "10.0.19.13 m3" }
-        - { line: "10.0.19.21 w1" }
-        - { line: "10.0.19.22 w2" }
-        - { line: "10.0.19.23 w3" }
 
     - name: ssh-key configuration
       copy:
@@ -53,5 +37,11 @@
         - 10.0.19.11
         - m2
         - 10.0.19.12
+        - m3
+        - 10.0.19.13
         - w1
         - 10.0.19.21
+        - w2
+        - 10.0.19.22
+        - w3
+        - 10.0.19.23

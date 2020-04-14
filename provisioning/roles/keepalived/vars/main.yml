@@ -1,0 +1,11 @@
+---
+
+ka_is_init_master: "{{ is_init_master }}"
+ka_vrrp_if: "{{ advertise_interface }}"
+ka_vrrp_ip: "{{ advertise_address }}"
+ka_vrrp_state: "{{ 'MASTER' if ka_is_init_master else 'BACKUP' }}"
+ka_vrrp_priority: "{{ '101' if ka_is_init_master else '100' }}"
+
+ka_master_ip: "{{ master_ip }}"
+ka_master_port: "{{ master_port }}"
+ka_password: "a6E/CHhJkCn1Ww1gF3qPiJTKTEc="

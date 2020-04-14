@@ -29,17 +29,6 @@
         state: "present"
         update_cache: true
 
-    - name: get upstream APT GPG key
-      apt_key:
-        url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
-        state: "present"
-
-    - name: configure upstream APT repository
-      apt_repository:
-        repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
-        state: "present"
-        update_cache: true
-
     - name: install packages
       vars:
         packages:
@@ -51,9 +40,6 @@
           - docker-ce
           - docker-ce-cli
           - containerd.io
-          - kubeadm
-          - kubelet
-          - kubectl
       apt:
         name: "{{ packages }}"
         state: "present"
@@ -64,19 +50,6 @@
         path: "/etc/hosts"
         regexp: "127.0.1.1.*"
         state: "absent"
-
-    - name: configure /etc/hosts
-      lineinfile:
-        path: "/etc/hosts"
-        line: "{{ item.line }}"
-      loop:
-        - { line: "10.0.19.10 lb" }
-        - { line: "10.0.19.11 m1" }
-        - { line: "10.0.19.12 m2" }
-        - { line: "10.0.19.13 m3" }
-        - { line: "10.0.19.21 w1" }
-        - { line: "10.0.19.22 w2" }
-        - { line: "10.0.19.23 w3" }
 
     - name: ssh-key configuration
       copy:
@@ -99,6 +72,8 @@
       loop:
         - net.bridge.bridge-nf-call-ip6tables
         - net.bridge.bridge-nf-call-iptables
+        - net.ipv4.ip_nonlocal_bind
+        - net.ipv4.ip_forward
 
     - name: Remove swapfile from /etc/fstab
       mount:

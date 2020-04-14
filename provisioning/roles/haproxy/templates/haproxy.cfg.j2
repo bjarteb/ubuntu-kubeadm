@@ -1,12 +1,33 @@
-frontend localnodes
-    bind *:6443
-    mode tcp
-    default_backend nodes
-    timeout client          1m
+global
+  log /dev/log  local0
+  log /dev/log  local1 notice
+  chroot /var/lib/haproxy
+  user haproxy
+  group haproxy
+  daemon
 
-backend nodes
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5s
+    timeout client 50s
+    timeout client-fin 50s
+    timeout server 50s
+    timeout tunnel 1h
+
+listen stats
+    bind *:1080
+    stats refresh 30s
+    stats uri /stats
+
+listen kube-api-server
+    bind {{ haproxy_master_ip }}:{{ haproxy_master_port }}
     mode tcp
+    option tcplog
     balance roundrobin
-    server m1 m1:6443;
-    timeout connect        10s
-    timeout server          1m
+
+{% for i in range(haproxy_masters_ips | length) %}
+    server kubeapi-{{i+1}} {{ haproxy_masters_ips[i] }}:{{ haproxy_kubeapi_port }} check
+{% endfor %}
